@@ -1802,7 +1802,14 @@ impl BlockChainClient for Client {
 
                 let keys = {
                         let f = iter.filter_map(|item| {
-                                item.ok().map(|(key, value)| (H256::from_slice(&key), H256::from_slice(&value)))
+                                item.ok().map(|(key, value)| {
+                                    let mut new_key = vec![0; 32-key.len()];
+                                    new_key.extend_from_slice(&key);
+
+                                    let mut new_value = vec![0; 32-value.len()];
+                                    new_value.extend_from_slice(&value);
+                                    (H256::from_slice(&new_key), H256::from_slice(&new_value))
+                                })
                         });
                         f.take(10_000 as usize).collect()
                 };
