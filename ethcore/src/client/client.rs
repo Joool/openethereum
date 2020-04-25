@@ -1773,6 +1773,44 @@ impl BlockChainClient for Client {
 		}
 	}
 
+	fn storage(&self, address: &Address, state: StateOrBlock) -> Option<Vec<(H256, H256)>> {
+		let state = match state {
+                    StateOrBlock::State(_) => {return None},
+                    StateOrBlock::Block(id) => self.state_at(id)?,
+		};
+
+                let root = match state.storage_root(address) {
+                        Ok(Some(root)) => root,
+                        _ => return None,
+                };
+
+                let (_, db) = state.drop();
+                let account_db = &self.factories.accountdb.readonly(db.as_hash_db(), keccak(address));
+                let account_db = &account_db.as_hash_db();
+                let trie = match self.factories.trie.readonly(account_db, &root) {
+                        Ok(trie) => trie,
+                        _ => {
+                                trace!(target: "fatdb", "list_storage: Couldn't open the DB");
+                                return None;
+                        }
+                };
+
+                let iter = match trie.iter() {
+                        Ok(iter) => iter,
+                        _ => return None,
+                };
+
+                let keys = {
+                        let f = iter.filter_map(|item| {
+                                item.ok().map(|(key, value)| (H256::from_slice(&key), H256::from_slice(&value)))
+                        });
+                        f.take(10_000 as usize).collect()
+                };
+
+                Some(keys)
+	}
+
+
 	fn list_accounts(&self, id: BlockId, after: Option<&Address>, count: u64) -> Option<Vec<Address>> {
 		if !self.factories.trie.is_fat() {
 			trace!(target: "fatdb", "list_accounts: Not a fat DB");

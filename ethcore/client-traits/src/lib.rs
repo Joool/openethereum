@@ -269,6 +269,8 @@ pub trait BlockChainClient:
 	/// Returns None if and only if the block's root hash has been pruned from the DB.
 	fn storage_at(&self, address: &Address, position: &H256, state: StateOrBlock) -> Option<H256>;
 
+	fn storage(&self, address: &Address, state: StateOrBlock) -> Option<Vec<(H256,H256)>>;
+
 	/// Get value of the storage at given position at the latest block's state.
 	fn latest_storage_at(&self, address: &Address, position: &H256) -> H256 {
 		self.storage_at(address, position, BlockId::Latest.into())

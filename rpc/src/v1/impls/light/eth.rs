@@ -296,6 +296,10 @@ where
 		Box::new(future::err(errors::unimplemented(None)))
 	}
 
+	fn storage(&self, _address: H160, _num: Option<BlockNumber>) -> BoxFuture<Vec<(H256,H256)>> {
+		Box::new(future::err(errors::unimplemented(None)))
+	}
+
 	fn block_by_hash(&self, hash: H256, include_txs: bool) -> BoxFuture<Option<RichBlock>> {
 		Box::new(self.rich_block(BlockId::Hash(hash), include_txs).map(Some))
 	}

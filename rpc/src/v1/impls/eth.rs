@@ -684,6 +684,18 @@ impl<C, SN: ?Sized, S: ?Sized, M, EM, T: StateInfo + 'static> Eth for EthClient<
 		Box::new(future::done(storage))
 	}
 
+	fn storage(&self, address: H160, num: Option<BlockNumber>) -> BoxFuture<Vec<(H256,H256)>> {
+		let num = num.unwrap_or_default();
+
+		try_bf!(check_known(&*self.client, num.clone()));
+		let storage = self.client.storage(
+			&address,
+			self.get_state(num)
+		).ok_or_else(errors::state_pruned);
+
+		Box::new(future::done(storage))
+	}
+
 	fn transaction_count(&self, address: H160, num: Option<BlockNumber>) -> BoxFuture<U256> {
 		let res = match num.unwrap_or_default() {
 			BlockNumber::Pending if self.options.pending_nonce_from_queue => {

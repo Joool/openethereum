@@ -78,6 +78,10 @@ pub trait Eth {
 	#[rpc(name = "eth_getStorageAt")]
 	fn storage_at(&self, _: H160, _: U256, _: Option<BlockNumber>) -> BoxFuture<H256>;
 
+	/// Returns content of the storage 
+	#[rpc(name = "eth_getStorage")]
+	fn storage(&self, _: H160, _: Option<BlockNumber>) -> BoxFuture<Vec<(H256,H256)>>;
+
 	/// Returns block with given hash.
 	#[rpc(name = "eth_getBlockByHash")]
 	fn block_by_hash(&self, _: H256, _: bool) -> BoxFuture<Option<RichBlock>>;
