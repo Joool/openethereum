@@ -1774,17 +1774,17 @@ impl BlockChainClient for Client {
 	}
 
 	fn storage(&self, address: &Address, state: StateOrBlock) -> Option<Vec<(H256, H256)>> {
-		let state = match state {
+                let s = match state {
                     StateOrBlock::State(_) => {return None},
                     StateOrBlock::Block(id) => self.state_at(id)?,
-		};
+                };
 
-                let root = match state.storage_root(address) {
+                let root = match s.storage_root(address) {
                         Ok(Some(root)) => root,
                         _ => return None,
                 };
 
-                let (_, db) = state.drop();
+                let (_, db) = s.drop();
                 let account_db = &self.factories.accountdb.readonly(db.as_hash_db(), keccak(address));
                 let account_db = &account_db.as_hash_db();
                 let trie = match self.factories.trie.readonly(account_db, &root) {
@@ -1800,21 +1800,24 @@ impl BlockChainClient for Client {
                         _ => return None,
                 };
 
-                let keys = {
-                        let f = iter.filter_map(|item| {
-                                item.ok().map(|(key, value)| {
-                                    let mut new_key = vec![0; 32-key.len()];
-                                    new_key.extend_from_slice(&key);
-
-                                    let mut new_value = vec![0; 32-value.len()];
-                                    new_value.extend_from_slice(&value);
-                                    (H256::from_slice(&new_key), H256::from_slice(&new_value))
-                                })
-                        });
-                        f.take(10_000 as usize).collect()
+                let keys: Vec<H256> = {
+                    iter.filter_map(|item| {
+                            item.ok().map(|(key, _)| H256::from_slice(&key))
+                    }).take(10_000 as usize).collect()
                 };
 
-                Some(keys)
+                let s = match state {
+                    StateOrBlock::State(_) => {return None},
+                    StateOrBlock::Block(id) => self.state_at(id)?,
+                };
+
+                let mut storage = Vec::with_capacity(10_000);
+                for key in keys {
+                    let value = s.storage_at(address, &key).ok()?;
+                    storage.push((key, value));
+                }
+
+                Some(storage)
 	}
 
 
